@@ -343,8 +343,8 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="flex items-center justify-center gap-3 mb-3"
           >
-            <p className="text-xs text-gray-500 text-center font-mono">
-              ✨ Cursor tail effect
+            <p className="text-xs text-primary text-center font-mono font-bold [text-shadow:0_0_12px_rgba(0,243,255,0.55)]">
+              ✨ Drawing mode
             </p>
             <Switch
               checked={cursorTrailEnabled}
