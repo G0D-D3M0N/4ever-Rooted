@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "installCommand": "npm install && npm install --no-save @rollup/rollup-linux-x64-gnu",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "env": {
