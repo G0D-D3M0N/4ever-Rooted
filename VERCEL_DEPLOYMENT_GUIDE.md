@@ -88,6 +88,12 @@ Expected:
 - HTTP 200 for each endpoint
 - Non-empty arrays/counts if your Turso DB already has data
 
+PowerShell quick check:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\script\verify-production.ps1 -BaseUrl "https://yourdomain.com"
+```
+
 ## 8) If API still shows empty data
 
 1. Confirm Vercel env var values are from the correct Turso database (not a different DB/branch).

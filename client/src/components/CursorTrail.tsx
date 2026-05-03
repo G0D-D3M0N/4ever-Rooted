@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useScroll, useTransform } from "framer-motion";
 import { useLocation } from "wouter";
 
+const CURSOR_TRAIL_STORAGE_KEY = "cursorTrailEnabled";
+const CURSOR_TRAIL_EVENT = "cursor-trail-toggle";
+
 export function CursorTrail() {
   const [location] = useLocation();
+  const [enabled, setEnabled] = useState(false);
   const [points, setPoints] = useState<{ x: number; y: number; time: number; color: string; fadeStartTime: number | null }[]>([]);
   const requestRef = useRef<number>();
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -16,7 +20,25 @@ export function CursorTrail() {
   const scrollOpacity = useTransform(scrollYProgress, [0, 0.05], [1, 0]);
 
   useEffect(() => {
-    if (location !== "/") {
+    if (typeof window === "undefined") return;
+
+    const syncFromStorage = () => {
+      const value = window.localStorage.getItem(CURSOR_TRAIL_STORAGE_KEY);
+      setEnabled(value === "true");
+    };
+
+    syncFromStorage();
+    window.addEventListener("storage", syncFromStorage);
+    window.addEventListener(CURSOR_TRAIL_EVENT, syncFromStorage);
+
+    return () => {
+      window.removeEventListener("storage", syncFromStorage);
+      window.removeEventListener(CURSOR_TRAIL_EVENT, syncFromStorage);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (location !== "/" || !enabled) {
       setPoints([]);
       return;
     }
@@ -72,9 +94,9 @@ export function CursorTrail() {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
     };
-  }, [location]);
+  }, [location, enabled]);
 
-  if (location !== "/" || points.length < 2) return null;
+  if (location !== "/" || !enabled || points.length < 2) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[40] overflow-hidden" style={{ opacity: scrollOpacity.get() }}>

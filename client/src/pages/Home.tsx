@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -92,11 +93,17 @@ function SectionHeading({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Home() {
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
+  const [cursorTrailEnabled, setCursorTrailEnabled] = useState(false);
   const { user } = useUser();
 
   useEffect(() => {
     document.title = "4ever Rooted — Free Developer Learning Platform";
     return () => { document.title = "4ever Rooted — Developer Learning Platform"; };
+  }, []);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("cursorTrailEnabled");
+    setCursorTrailEnabled(saved === "true");
   }, []);
   const { toast } = useToast();
   const heroRef = useRef(null);
@@ -330,14 +337,25 @@ export default function Home() {
           </motion.div>
 
           {/* Drawing note */}
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="text-xs text-gray-500 text-center mb-3 font-mono"
+            className="flex items-center justify-center gap-3 mb-3"
           >
-            ✨ You can draw on this page, have fun
-          </motion.p>
+            <p className="text-xs text-gray-500 text-center font-mono">
+              ✨ Cursor tail effect
+            </p>
+            <Switch
+              checked={cursorTrailEnabled}
+              onCheckedChange={(checked) => {
+                setCursorTrailEnabled(checked);
+                window.localStorage.setItem("cursorTrailEnabled", String(checked));
+                window.dispatchEvent(new Event("cursor-trail-toggle"));
+              }}
+              aria-label="Toggle cursor trail effect"
+            />
+          </motion.div>
 
           {/* Scroll cue */}
           <motion.div
