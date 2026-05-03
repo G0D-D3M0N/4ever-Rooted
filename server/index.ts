@@ -20,13 +20,16 @@ const isVercel = !!process.env.VERCEL;
 
 // Get custom domain from env var (e.g., CUSTOM_DOMAIN=4everrooted.com)
 const customDomain = process.env.CUSTOM_DOMAIN ? `https://${process.env.CUSTOM_DOMAIN}` : null;
+const wwwDomain = customDomain && !customDomain.includes("www") 
+  ? `https://www.${process.env.CUSTOM_DOMAIN}`
+  : null;
 
 const allowedOrigins: (string | RegExp)[] = isProd
   ? [
-      /^https:\/\/.*\.replit\.app$/,
-      /^https:\/\/.*\.replit\.dev$/,
       /^https:\/\/.*\.vercel\.app$/,
+      /^https:\/\/localhost(:\d+)?$/,
       ...(customDomain ? [customDomain] : []),
+      ...(wwwDomain ? [wwwDomain] : []),
     ]
   : [
       /^https?:\/\/localhost(:\d+)?$/,
