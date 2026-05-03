@@ -111,18 +111,36 @@ app.use((req, res, next) => {
   next();
 });
 
-await runMigrations();
-await registerRoutes(httpServer, app);
+let bootstrapPromise: Promise<void> | null = null;
 
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  const status = err.status || err.statusCode || 500;
-  const message =
-    isProd && status === 500
-      ? "Internal Server Error"
-      : err.message || "Internal Server Error";
+function ensureBootstrapped() {
+  if (!bootstrapPromise) {
+    bootstrapPromise = (async () => {
+      await runMigrations();
+      await registerRoutes(httpServer, app);
 
-  res.status(status).json({ message });
-  if (status >= 500) console.error(err);
+      app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+        const status = err.status || err.statusCode || 500;
+        const message =
+          isProd && status === 500
+            ? "Internal Server Error"
+            : err.message || "Internal Server Error";
+
+        res.status(status).json({ message });
+        if (status >= 500) console.error(err);
+      });
+    })();
+  }
+  return bootstrapPromise;
+}
+
+app.use(async (_req: Request, _res: Response, next: NextFunction) => {
+  try {
+    await ensureBootstrapped();
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default app;

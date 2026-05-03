@@ -22,7 +22,6 @@ const allowlist = [
 
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
-  await rm("api", { recursive: true, force: true });
 
   console.log("building client...");
   await viteBuild();
@@ -39,8 +38,8 @@ async function buildAll() {
     entryPoints: ["server/vercel.ts"],
     platform: "node",
     bundle: true,
-    format: "esm",
-    outfile: "api/index.mjs",
+    format: "cjs",
+    outfile: "dist/server.cjs",
     define: {
       "process.env.NODE_ENV": '"production"',
       "process.env.VERCEL": '"1"',
