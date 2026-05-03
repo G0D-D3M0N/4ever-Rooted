@@ -5,11 +5,16 @@ import * as schema from "@shared/schema";
 
 // All credentials come from Replit Secrets / Vercel Environment Variables.
 // See env.template for the full list of required variables.
-const databaseUrl = process.env.TURSO_DATABASE_URL;
+const databaseUrl =
+  process.env.TURSO_DATABASE_URL ||
+  process.env.DATABASE_URL ||
+  process.env.LIBSQL_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
 if (!databaseUrl) {
-  throw new Error("TURSO_DATABASE_URL is not set. Add it to your environment secrets.");
+  throw new Error(
+    "Database URL is missing. Set TURSO_DATABASE_URL (recommended), or DATABASE_URL/LIBSQL_URL in environment variables."
+  );
 }
 
 // Only log DB target in development — never expose hostnames in production logs

@@ -59,8 +59,21 @@ export interface IStorage {
   bulkCreateResources(items: InsertResource[]): Promise<number>;
 }
 
+function safeParseJsonArray(value: unknown): any {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    // Keep API resilient if legacy rows contain non-JSON text.
+    return [];
+  }
+}
+
 function parseResource(r: Resource): Resource {
-  return { ...r, tags: r.tags ? JSON.parse(r.tags as unknown as string) : [] };
+  return { ...r, tags: safeParseJsonArray(r.tags) };
 }
 
 export class DatabaseStorage implements IStorage {
@@ -153,7 +166,7 @@ export class DatabaseStorage implements IStorage {
     const steps = await db.select().from(roadmapSteps)
       .where(eq(roadmapSteps.roadmapId, roadmapId))
       .orderBy(roadmapSteps.order);
-    return steps.map(s => ({ ...s, resources: s.resources ? JSON.parse(s.resources) : [] }));
+    return steps.map(s => ({ ...s, resources: safeParseJsonArray(s.resources) }));
   }
 
   async deleteRoadmap(id: number): Promise<void> {
@@ -181,14 +194,14 @@ export class DatabaseStorage implements IStorage {
       ...step,
       resources: step.resources ? JSON.stringify(step.resources) : null,
     }).returning();
-    return { ...s, resources: s.resources ? JSON.parse(s.resources) : [] };
+    return { ...s, resources: safeParseJsonArray(s.resources) };
   }
 
   async updateRoadmapStep(id: number, data: Partial<any>): Promise<RoadmapStep | undefined> {
     const update: any = { ...data };
     if (data.resources) update.resources = JSON.stringify(data.resources);
     const [s] = await db.update(roadmapSteps).set(update).where(eq(roadmapSteps.id, id)).returning();
-    return s ? { ...s, resources: s.resources ? JSON.parse(s.resources) : [] } : undefined;
+    return s ? { ...s, resources: safeParseJsonArray(s.resources) } : undefined;
   }
 
   async deleteRoadmapStep(id: number): Promise<void> {
