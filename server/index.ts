@@ -18,12 +18,15 @@ declare module "http" {
 const isProd = process.env.NODE_ENV === "production";
 const isVercel = !!process.env.VERCEL;
 
+// Get custom domain from env var (e.g., CUSTOM_DOMAIN=4everrooted.com)
+const customDomain = process.env.CUSTOM_DOMAIN ? `https://${process.env.CUSTOM_DOMAIN}` : null;
+
 const allowedOrigins: (string | RegExp)[] = isProd
   ? [
       /^https:\/\/.*\.replit\.app$/,
       /^https:\/\/.*\.replit\.dev$/,
       /^https:\/\/.*\.vercel\.app$/,
-      // Add your custom domain here, e.g.: "https://4everrooted.com"
+      ...(customDomain ? [customDomain] : []),
     ]
   : [
       /^https?:\/\/localhost(:\d+)?$/,
