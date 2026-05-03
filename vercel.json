@@ -6,7 +6,7 @@
     "NODE_ENV": "production"
   },
   "rewrites": [
-    { "source": "api/(.*)", "destination": "api/index.mjs" },
+    { "source": "/api/(.*)", "destination": "/api/index.mjs" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
