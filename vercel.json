@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build && npm prune --omit=dev",
+  "buildCommand": "npm run build && rm -rf node_modules/rollup node_modules/vite node_modules/esbuild",
   "outputDirectory": "dist/public",
   "env": {
     "NODE_ENV": "production"
