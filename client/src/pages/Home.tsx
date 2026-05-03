@@ -329,6 +329,16 @@ export default function Home() {
             </Link>
           </motion.div>
 
+          {/* Drawing note */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="text-xs text-gray-500 text-center mb-3 font-mono"
+          >
+            ✨ You can draw on this page, have fun
+          </motion.p>
+
           {/* Scroll cue */}
           <motion.div
             initial={{ opacity: 0 }}
