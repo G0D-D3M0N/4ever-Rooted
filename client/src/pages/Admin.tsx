@@ -375,14 +375,31 @@ export default function Admin() {
     setFmhyState("loading");
     setFmhyResult("");
     try {
-      const res = await fetch("/api/admin/seed-fmhy", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 120_000);
+      let res: Response;
+      try {
+        res = await fetch("/api/admin/seed-fmhy", { method: "POST", signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      const text = await res.text();
+      if (!text || !text.trim()) throw new Error("Server timed out or returned an empty response. The import may still be running — wait 30 seconds and refresh.");
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server returned unexpected response: ${text.slice(0, 200)}`);
+      }
+      if (!res.ok) throw new Error(data.message || "Import failed");
       setFmhyResult(data.message);
       setFmhyState("done");
       invalidate();
     } catch (err: any) {
-      setFmhyResult(err.message || "Import failed");
+      const msg = err.name === "AbortError"
+        ? "Request timed out after 2 minutes. The import may still be running — check back in a moment."
+        : (err.message || "Import failed");
+      setFmhyResult(msg);
       setFmhyState("error");
     }
   }

@@ -142,6 +142,8 @@ if (!isVercel) {
   }
 
   const port = parseInt(process.env.PORT || "3000", 10);
+  httpServer.timeout = 180_000;
+  httpServer.keepAliveTimeout = 180_000;
   httpServer.listen({ port, host: "0.0.0.0" }, () => {
     log(`serving on port ${port}`);
   });

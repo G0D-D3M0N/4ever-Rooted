@@ -124,7 +124,7 @@ function getSectionMapping(sectionLower: string): { category: string; subcategor
 async function seedFromFMHY(): Promise<{ inserted: number; skipped: number; total: number }> {
   const resp = await fetch("https://api.fmhy.net/single-page", {
     headers: { "User-Agent": "4everRooted/1.0 (educational platform)" },
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(60000),
   });
   if (!resp.ok) throw new Error(`FMHY API error: ${resp.status}`);
   const text = await resp.text();
@@ -382,6 +382,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.post("/api/admin/seed-fmhy", async (req, res) => {
     if (!isAdminUser(req)) return res.status(403).json({ message: "Admin only." });
+    // Allow up to 3 minutes for the full fetch + parse + DB insert cycle
+    req.setTimeout(180_000);
+    res.setTimeout(180_000);
     try {
       const result = await seedFromFMHY();
       res.json({
@@ -390,7 +393,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
     } catch (err: any) {
       console.error("[seed-fmhy] error:", err);
-      res.status(500).json({ message: err.message || "Failed to import from FMHY." });
+      if (!res.headersSent) {
+        res.status(500).json({ message: err.message || "Failed to import from FMHY." });
+      }
     }
   });
 
