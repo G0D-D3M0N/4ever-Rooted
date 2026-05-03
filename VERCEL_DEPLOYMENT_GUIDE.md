@@ -22,7 +22,7 @@ git push origin main
    - Framework Preset: `Other`
    - Build Command: `npm run build`
    - Output Directory: `dist/public`
-   - Install Command: `npm install`
+   - Install Command: `npm install --include=dev`
 
 ## 3) Add required Vercel environment variables
 
@@ -34,7 +34,6 @@ Set these in **Project Settings -> Environment Variables** for `Production`, `Pr
 - `VITE_CLERK_PUBLISHABLE_KEY` = Clerk frontend publishable key
 - `CLERK_ADMIN_USER_IDS` = comma-separated Clerk user IDs for admin access
 - `CUSTOM_DOMAIN` = your apex domain only (example: `example.com`)
-- `NODE_ENV` = `production`
 
 Optional compatibility fallback:
 - `DATABASE_URL` (only if you use this naming in other environments)

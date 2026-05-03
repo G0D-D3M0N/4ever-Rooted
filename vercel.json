@@ -1,14 +1,12 @@
 {
   "version": 2,
+  "installCommand": "npm install --include=dev",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "functions": {
     "api/index.mjs": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "NODE_ENV": "production"
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.mjs" },
