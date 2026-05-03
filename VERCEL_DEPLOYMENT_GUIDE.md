@@ -106,3 +106,23 @@ powershell -ExecutionPolicy Bypass -File .\script\verify-production.ps1 -BaseUrl
 
 The API function was loading dev tooling (`vite`/`rollup`) at runtime in serverless, causing 500 errors.  
 This repository now uses a dedicated serverless entry (`server/vercel.ts`) and a hardened parser for legacy DB JSON fields, so `/api/resources` and `/api/stats` stay stable.
+
+## 10) Large FMHY import (community links)
+
+Imports are parsed from **`https://api.fmhy.net/single-page`** (same source documented at [fmhy.net](https://fmhy.net)).
+
+Run locally against your Turso-backed `.env`:
+
+```powershell
+npm run import:fmhy -- 8500
+```
+
+Dry run (parses only, prints category counts):
+
+```powershell
+npm run import:fmhy -- 8500 --dry-run
+```
+
+For very large batches, prefer this CLI route instead of **`POST /api/admin/seed-fmhy`** on Vercel (serverless time limits).
+
+Categorisation uses headings + keywords + hostname heuristics; some long-tail mirrors still land under **General Tools** by design.

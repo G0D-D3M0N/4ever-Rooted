@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "seed": "tsx script/seed.ts",
+    "import:fmhy": "tsx script/import-fmhy-bulk.ts",
     "sync:roadmaps": "tsx script/sync-roadmaps.ts"
   },
   "dependencies": {

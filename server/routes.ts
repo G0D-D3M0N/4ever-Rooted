@@ -16,6 +16,7 @@ import {
   createRoadmapStepSchema,
   updateRoadmapStepSchema,
 } from "./validation";
+import { buildFmhySeedItems } from "@shared/fmhy-ingest";
 
 // ── Rate limiters ─────────────────────────────────────────────────────────────
 
@@ -34,7 +35,7 @@ const submitResourceLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many resource submissions. Please wait an hour before submitting again." },
-  keyGenerator: (req) => getClerkUserId(req) ?? ipKeyGenerator(req),
+  keyGenerator: (req) => getClerkUserId(req) ?? ipKeyGenerator(req.ip || "0.0.0.0"),
 });
 
 const voteLimiter = rateLimit({
@@ -43,7 +44,7 @@ const voteLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many requests. Please slow down." },
-  keyGenerator: (req) => getClerkUserId(req) ?? ipKeyGenerator(req),
+  keyGenerator: (req) => getClerkUserId(req) ?? ipKeyGenerator(req.ip || "0.0.0.0"),
 });
 
 const searchLimiter = rateLimit({
@@ -60,170 +61,12 @@ const progressLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many progress updates. Please slow down." },
-  keyGenerator: (req) => getClerkUserId(req) ?? ipKeyGenerator(req),
+  keyGenerator: (req) => getClerkUserId(req) ?? ipKeyGenerator(req.ip || "0.0.0.0"),
 });
 
-// ── FMHY seed helper ─────────────────────────────────────────────────────────
-
-interface SeedItem {
-  title: string;
-  url: string;
-  description: string;
-  category: string;
-  subcategory: string;
-  tags: string[];
-  status: string;
-  votes: number;
-  submittedBy: null;
-  warning: null;
-}
-
-const SECTION_MAP: Array<{ keys: string[]; category: string; subcategory: string }> = [
-  { keys: ["ai chatbot", "ai tools", "ai search", "ai", "llm", "chatgpt", "machine learning"], category: "AI & ML", subcategory: "AI Assistants" },
-  { keys: ["educational", "learning", "courses", "course", "tutorials", "e-learning"], category: "Learning", subcategory: "Courses & Curricula" },
-  { keys: ["books", "textbooks"], category: "Books", subcategory: "Programming Books" },
-  { keys: ["comics", "manga"], category: "Books", subcategory: "Programming Books" },
-  { keys: ["gaming", "games", "game emulat", "rom", "emulat"], category: "Entertainment", subcategory: "Gaming" },
-  { keys: ["movies", "films", "movie streaming"], category: "Entertainment", subcategory: "Movies & TV" },
-  { keys: ["tv shows", "television", "series stream"], category: "Entertainment", subcategory: "Movies & TV" },
-  { keys: ["anime", "watch anime"], category: "Entertainment", subcategory: "Anime" },
-  { keys: ["music stream", "music downl", "music platform"], category: "Entertainment", subcategory: "Music" },
-  { keys: ["audio", "podcast"], category: "Entertainment", subcategory: "Music" },
-  { keys: ["video tools", "video edit", "video stream"], category: "Entertainment", subcategory: "Video Tools" },
-  { keys: ["file tools", "file convert", "file host"], category: "General Tools", subcategory: "File Tools" },
-  { keys: ["download tools", "direct downl", "downloading"], category: "General Tools", subcategory: "Download Tools" },
-  { keys: ["vpn", "privacy tools", "adblock", "ad block", "anonymity"], category: "General Tools", subcategory: "VPN & Privacy" },
-  { keys: ["android", "ios", "mobile apps", "smartphone"], category: "General Tools", subcategory: "Mobile Apps" },
-  { keys: ["storage", "cloud storage", "file sharing"], category: "General Tools", subcategory: "Storage & Cloud" },
-  { keys: ["windows", "software sites", "portable apps"], category: "General Tools", subcategory: "Converters & Utilities" },
-  { keys: ["tools", "utilities", "converters", "online tools"], category: "General Tools", subcategory: "Converters & Utilities" },
-  { keys: ["linux", "macos", "unix", "mac os"], category: "Reference", subcategory: "Language Guides" },
-  { keys: ["images", "photos", "photo edit", "wallpaper", "photography"], category: "Design & UI", subcategory: "Icons & Assets" },
-  { keys: ["art", "graphic design", "design tools"], category: "Design & UI", subcategory: "Design Tools" },
-  { keys: ["fonts", "typography", "emoji"], category: "Design & UI", subcategory: "Fonts & Typography" },
-  { keys: ["making apps", "making games", "game dev", "app dev"], category: "Programming", subcategory: "Frameworks & Ecosystems" },
-  { keys: ["social media", "forums", "communities"], category: "Community", subcategory: "Forums & Q&A" },
-  { keys: ["documents", "articles", "news"], category: "Reference", subcategory: "Documentation" },
-  { keys: ["misc", "miscellaneous", "general"], category: "General Tools", subcategory: "Converters & Utilities" },
-];
-
-const SKIP_PATTERNS = [
-  "non-english", "discord", "request", "sms", "phishing",
-  "18+", "adult", "nsfw", "porn", "hentai", "xxx", "cooking", "food",
-];
-
-function getSectionMapping(sectionLower: string): { category: string; subcategory: string } | null {
-  for (const entry of SECTION_MAP) {
-    if (entry.keys.some(k => sectionLower.includes(k))) {
-      return { category: entry.category, subcategory: entry.subcategory };
-    }
-  }
-  return null;
-}
-
+/** FMHY importer (see `@shared/fmhy-ingest`). Default cap is raised for bulk community imports. */
 async function seedFromFMHY(): Promise<{ inserted: number; skipped: number; total: number }> {
-  const resp = await fetch("https://api.fmhy.net/single-page", {
-    headers: { "User-Agent": "4everRooted/1.0 (educational platform)" },
-    signal: AbortSignal.timeout(60000),
-  });
-  if (!resp.ok) throw new Error(`FMHY API error: ${resp.status}`);
-  const text = await resp.text();
-
-  // Check if response is HTML (error page) instead of markdown
-  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-    throw new Error("FMHY API returned HTML error page. The API may be temporarily unavailable or rate-limited. Please try again later.");
-  }
-
-  const toInsert: SeedItem[] = [];
-  const urlSet = new Set<string>();
-
-  const lines = text.split("\n");
-  let currentCategory: string | null = null;
-  let currentSubcategory = "";
-  let skip = false;
-
-  for (const line of lines) {
-    // Main section: ## ► Section or ## Section
-    const mainSec = line.match(/^##\s+[►▶]?\s*(.+?)(?:\s*\/.*)?$/);
-    if (mainSec) {
-      const secName = mainSec[1].replace(/[►▶▸▷★*]/g, "").trim();
-      const secLower = secName.toLowerCase();
-
-      skip = SKIP_PATTERNS.some(p => secLower.includes(p));
-      if (skip) { currentCategory = null; continue; }
-
-      const mapping = getSectionMapping(secLower);
-      if (mapping) {
-        currentCategory = mapping.category;
-        currentSubcategory = mapping.subcategory;
-      } else {
-        currentCategory = null;
-      }
-      continue;
-    }
-
-    // Subsection: ### ▷ Subsection
-    const subSec = line.match(/^###\s+[▷▸]?\s*(.+?)(?:\s*$)/);
-    if (subSec) {
-      const subName = subSec[1].replace(/[►▶▸▷★*]/g, "").trim();
-      const subLower = subName.toLowerCase();
-      const subSkip = SKIP_PATTERNS.some(p => subLower.includes(p));
-      if (subSkip) { skip = true; continue; } else { skip = false; }
-      // Update subcategory if we have a section
-      if (currentCategory) {
-        // Try to remap subsection
-        const subMapping = getSectionMapping(subLower);
-        if (subMapping && subMapping.category === currentCategory) {
-          currentSubcategory = subMapping.subcategory;
-        } else {
-          currentSubcategory = subName.slice(0, 100);
-        }
-      }
-      continue;
-    }
-
-    if (skip || !currentCategory) continue;
-    if (toInsert.length >= 900) break;
-
-    // Extract all [Title](url) from line
-    const linkRe = /\[([^\]]{1,200})\]\((https:\/\/[^)\s]{5,400})\)/g;
-    let m;
-    while ((m = linkRe.exec(line)) !== null) {
-      const title = m[1].replace(/\*+/g, "").replace(/↪️/g, "").trim();
-      const url = m[2].trim().split(/[\s'"]/)[0]; // trim trailing junk
-
-      if (!title || title.length < 2) continue;
-      if (!url.startsWith("https://")) continue;
-      if (urlSet.has(url)) continue;
-      urlSet.add(url);
-
-      // Extract description: text after ") - " or ") — "
-      const afterIdx = line.indexOf(m[0]) + m[0].length;
-      const rest = line.slice(afterIdx).replace(/^\s*[-—]\s*/, "").trim();
-      const desc = rest
-        .replace(/\*+/g, "")
-        .replace(/\[.*?\]\(.*?\)/g, "")
-        .replace(/↪️/g, "")
-        .trim()
-        .slice(0, 500);
-
-      toInsert.push({
-        title: title.slice(0, 200),
-        url,
-        description: desc && desc.length > 3 ? desc : `${title} — from the FMHY resource index.`,
-        category: currentCategory!,
-        subcategory: currentSubcategory.slice(0, 100),
-        tags: ["fmhy"],
-        status: "approved",
-        votes: 0,
-        submittedBy: null,
-        warning: null,
-      });
-
-      if (toInsert.length >= 900) break;
-    }
-  }
-
+  const toInsert = await buildFmhySeedItems({ maxLinks: 8000 });
   const inserted = await storage.bulkCreateResources(toInsert as any);
   return { inserted, skipped: toInsert.length - inserted, total: toInsert.length };
 }
