@@ -38,6 +38,18 @@ export function CursorTrail() {
   }, []);
 
   useEffect(() => {
+    if (location === "/" && enabled) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [location, enabled]);
+
+  useEffect(() => {
     if (location !== "/" || !enabled) {
       setPoints([]);
       return;
