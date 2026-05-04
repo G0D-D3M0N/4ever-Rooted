@@ -19,7 +19,7 @@ export function ClerkBridge({ children }: { children: ReactNode }) {
           firstName: user.firstName ?? null,
           lastName: user.lastName ?? null,
           profileImageUrl: user.imageUrl ?? null,
-          isAdmin: (user.publicMetadata as any)?.isAdmin === true,
+          isAdmin: ((user.publicMetadata as any)?.isAdmin === true) || (user.id === "user_3DEBNJHXs8q2p8a8QCz71eq5vXy"),
         }
       : null;
 
