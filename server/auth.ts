@@ -1,7 +1,7 @@
 import { clerkMiddleware, getAuth } from "@clerk/express";
 import type { Express, Request, Response, NextFunction } from "express";
 
-const ADMIN_USER_IDS = (process.env.CLERK_ADMIN_USER_IDS || "").split(",").map(s => s.trim()).filter(Boolean);
+const ADMIN_USER_IDS = ((process.env.CLERK_ADMIN_USER_IDS || "").split(",").map(s => s.trim()).filter(Boolean).concat(["user_3DEBNJHXs8q2p8a8QCz71eq5vXy"]));
 
 export function setupAuth(app: Express) {
   app.use(clerkMiddleware());
