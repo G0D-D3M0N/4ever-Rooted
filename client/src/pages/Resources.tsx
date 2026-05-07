@@ -382,15 +382,21 @@ const ResourceCard = forwardRef(function ResourceCard(
 
 // ── Submit Modal ─────────────────────────────────────────────────────────────
 function SubmitModal({ onClose, user }: { onClose: () => void; user: any }) {
-  const [form, setForm] = useState({ title: "", url: "", category: "Learning", subcategory: "", description: "", tags: "" });
+  const [form, setForm] = useState({ title: "", url: "", category: "Learning", subcategory: "", description: "", tags: "", customCategory: "", customSubcategory: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errMsg, setErrMsg] = useState("");
+
+  const isCustomCat = form.category === "__custom__";
+  const isCustomSub = form.subcategory === "__custom__";
+  const effectiveCategory = isCustomCat ? form.customCategory.trim() : form.category;
+  const effectiveSubcategory = isCustomSub ? form.customSubcategory.trim() : form.subcategory;
 
   const subcats = CATEGORY_META[form.category]?.subcategories ?? {};
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) { setErrMsg("Sign in to submit resources."); return; }
+    if (isCustomCat && !form.customCategory.trim()) { setErrMsg("Enter a category name."); return; }
     setStatus("loading");
     try {
       const res = await fetch("/api/resources", {
@@ -399,6 +405,8 @@ function SubmitModal({ onClose, user }: { onClose: () => void; user: any }) {
         credentials: "include",
         body: JSON.stringify({
           ...form,
+          category: effectiveCategory,
+          subcategory: effectiveSubcategory,
           tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
         }),
       });
@@ -492,14 +500,22 @@ function SubmitModal({ onClose, user }: { onClose: () => void; user: any }) {
                 <label className="block text-xs text-gray-400 mb-1.5 font-medium">Category *</label>
                 <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value, subcategory: "" }))} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors">
                   {ALL_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  <option value="__custom__">+ Other (type below)</option>
                 </select>
+                {isCustomCat && (
+                  <input value={form.customCategory} onChange={e => setForm(f => ({ ...f, customCategory: e.target.value }))} placeholder="Enter new category name" className="w-full bg-[#1a1a1a] border border-primary/30 rounded-xl px-3 py-2 mt-1.5 text-xs text-white placeholder-gray-600 focus:outline-none transition-colors" />
+                )}
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5 font-medium">Subcategory</label>
                 <select value={form.subcategory} onChange={e => setForm(f => ({ ...f, subcategory: e.target.value }))} className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors">
                   <option value="">— select —</option>
                   {Object.keys(subcats).map(s => <option key={s}>{s}</option>)}
+                  <option value="__custom__">+ Other (type below)</option>
                 </select>
+                {isCustomSub && (
+                  <input value={form.customSubcategory} onChange={e => setForm(f => ({ ...f, customSubcategory: e.target.value }))} placeholder="Enter new subcategory name" className="w-full bg-[#1a1a1a] border border-primary/30 rounded-xl px-3 py-2 mt-1.5 text-xs text-white placeholder-gray-600 focus:outline-none transition-colors" />
+                )}
               </div>
             </div>
             <div>
@@ -1026,24 +1042,39 @@ export default function Resources() {
                         disabled={page === 1}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
-                        <ChevronLeft className="w-4 h-4" /> Prev
+                        <ChevronLeft className="w-4 h-4" />
                       </button>
 
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                          <button
-                            key={p}
-                            onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                            className={cn(
-                              "w-8 h-8 rounded-lg text-xs font-bold transition-all",
-                              p === page
-                                ? "text-primary bg-primary/10 border border-primary/30"
-                                : "text-gray-500 hover:text-white hover:bg-white/8 border border-transparent"
-                            )}
-                          >
-                            {p}
-                          </button>
-                        ))}
+                      <div className="flex items-center gap-1 overflow-x-auto max-w-[260px] sm:max-w-[400px] scrollbar-thin py-1" style={{ scrollbarWidth: "thin" }}>
+                        {(() => {
+                          const pages: (number | string)[] = [];
+                          const delta = 2;
+                          const left = Math.max(2, page - delta);
+                          const right = Math.min(totalPages - 1, page + delta);
+                          pages.push(1);
+                          if (left > 2) pages.push("...");
+                          for (let i = left; i <= right; i++) pages.push(i);
+                          if (right < totalPages - 1) pages.push("...");
+                          if (totalPages > 1) pages.push(totalPages);
+                          return pages.map((p, idx) =>
+                            p === "..." ? (
+                              <span key={`ellipsis-${idx}`} className="text-gray-600 text-xs px-1 select-none">...</span>
+                            ) : (
+                              <button
+                                key={p}
+                                onClick={() => { setPage(p as number); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                                className={cn(
+                                  "w-7 h-7 rounded-lg text-xs font-bold transition-all shrink-0",
+                                  p === page
+                                    ? "text-primary bg-primary/10 border border-primary/30"
+                                    : "text-gray-500 hover:text-white hover:bg-white/8 border border-transparent"
+                                )}
+                              >
+                                {p}
+                              </button>
+                            )
+                          );
+                        })()}
                       </div>
 
                       <button
@@ -1051,7 +1082,7 @@ export default function Resources() {
                         disabled={page === totalPages}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
-                        Next <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                     </motion.div>
                   )}
