@@ -23,6 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 // ─── Reusable animation variants ────────────────────────────────────────────
 const fadeUp = {
@@ -135,7 +136,7 @@ export default function Home() {
   const rootedRot = useTransform(arcProgress, (p: number) => p * 22);
   const rootedOp  = useTransform(scrollY, [0, 300, 560], [1, 0.55, 0]);
 
-  const { data: recentResources } = useQuery<Resource[]>({
+  const { data: recentResources, isLoading: loadingResources } = useQuery<Resource[]>({
     queryKey: ["/api/resources/recent"],
     queryFn: async () => {
       const res = await fetch("/api/resources?recent=true", { credentials: "include" });
@@ -144,7 +145,7 @@ export default function Home() {
     },
   });
 
-  const { data: allRoadmaps } = useQuery<Roadmap[]>({
+  const { data: allRoadmaps, isLoading: loadingRoadmaps } = useQuery<Roadmap[]>({
     queryKey: ["/api/roadmaps"],
     queryFn: async () => {
       const res = await fetch("/api/roadmaps", { credentials: "include" });
@@ -153,7 +154,7 @@ export default function Home() {
     },
   });
 
-  const { data: dbStats } = useQuery<{ resourceCount: number; roadmapCount: number }>({
+  const { data: dbStats, isLoading: loadingStats } = useQuery<{ resourceCount: number; roadmapCount: number }>({
     queryKey: ["/api/stats"],
     queryFn: async () => {
       const res = await fetch("/api/stats");
@@ -379,28 +380,34 @@ export default function Home() {
       {/* ── STATS STRIP ───────────────────────────────────────────────────── */}
       <div className="border-y border-white/5 bg-white/[0.02]">
         <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
-          <motion.div
-            variants={stagger(0.12)}
-            initial="hidden"
-            whileInView="visible"
-            viewport={vp}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8"
-          >
-            {stats.map((stat) => (
-              <motion.div
-                key={stat.label}
-                variants={fadeUp}
-                className="text-center"
-              >
-                <div className="text-3xl md:text-5xl font-black text-primary mb-1">
-                  {stat.value}{stat.suffix}
-                </div>
-                <div className="text-sm text-gray-500 font-mono tracking-wider uppercase">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+          {loadingStats ? (
+            <div className="flex justify-center">
+              <LoadingSpinner size={32} />
+            </div>
+          ) : (
+            <motion.div
+              variants={stagger(0.12)}
+              initial="hidden"
+              whileInView="visible"
+              viewport={vp}
+              className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8"
+            >
+              {stats.map((stat) => (
+                <motion.div
+                  key={stat.label}
+                  variants={fadeUp}
+                  className="text-center"
+                >
+                  <div className="text-3xl md:text-5xl font-black text-primary mb-1">
+                    {stat.value}{stat.suffix}
+                  </div>
+                  <div className="text-sm text-gray-500 font-mono tracking-wider uppercase">
+                    {stat.label}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -491,7 +498,11 @@ export default function Home() {
           accent="community"
           subtitle="Freshly added tools, courses, and references hand-picked for developers."
         />
-        {recentResources && recentResources.length > 0 ? (
+        {loadingResources ? (
+          <div className="flex justify-center py-20">
+            <LoadingSpinner size={48} />
+          </div>
+        ) : recentResources && recentResources.length > 0 ? (
           <motion.div
             variants={stagger(0.07)}
             initial="hidden"
@@ -586,8 +597,15 @@ export default function Home() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full h-11" disabled={submitMutation.isPending}>
-                    {submitMutation.isPending ? "Submitting..." : "Post Resource"}
+                  <Button type="submit" className="w-full h-11 flex items-center justify-center gap-2" disabled={submitMutation.isPending}>
+                    {submitMutation.isPending ? (
+                      <>
+                        <LoadingSpinner size={18} />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      "Post Resource"
+                    )}
                   </Button>
                 </form>
               </DialogContent>

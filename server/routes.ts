@@ -114,6 +114,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const userId = getClerkUserId(req);
       if (!userId) return res.status(401).json({ message: "Sign in to submit resources." });
 
+      // Check if the resource URL already exists to avoid duplicate entries
+      const urlExists = await storage.resourceUrlExists(req.body.url);
+      if (urlExists) {
+        return res.status(409).json({ message: "Resource with this URL already submitted." });
+      }
+
       try {
         const resource = await storage.createResource({
           ...req.body,
@@ -122,6 +128,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
         res.status(201).json(resource);
       } catch (err) {
+        // Log the error for debugging purposes
+        console.error("[submit resource] error:", err);
         res.status(500).json({ message: "Failed to submit resource. Please try again." });
       }
     }

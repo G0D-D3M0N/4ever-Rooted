@@ -12,6 +12,18 @@ const databaseUrl =
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
 if (!databaseUrl) {
+
+
+
+
+
+
+
+
+
+
+
+  
   throw new Error(
     "Database URL is missing. Set TURSO_DATABASE_URL (recommended), or DATABASE_URL/LIBSQL_URL in environment variables."
   );
