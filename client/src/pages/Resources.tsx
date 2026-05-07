@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, forwardRef, Ref } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import BeginnersGuide from "@/components/BeginnersGuide";
 import { useResources } from "@/hooks/use-resources";
 import { useUser } from "@/hooks/use-user";
 import { motion, AnimatePresence } from "framer-motion";
@@ -532,6 +533,22 @@ function Sidebar({
         />
       </div>
 
+      {/* Beginner's Guide */}
+      <button
+        onClick={() => setActiveCategory("Beginners Guide")}
+        className={cn(
+          "flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-semibold transition-all mb-1",
+          activeCategory === "Beginners Guide"
+            ? "bg-primary/10 border border-primary/25 text-primary"
+            : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
+        )}
+      >
+        <span className="flex items-center gap-2">
+          <BookOpen className="w-3.5 h-3.5" />
+          Beginner's Guide
+        </span>
+      </button>
+
       {/* All Resources */}
       <button
         onClick={() => setActiveCategory("All")}
@@ -692,7 +709,7 @@ const PAGE_SIZE = 30;
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Resources() {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState("Beginners Guide");
   const [search, setSearch] = useState("");
   const [showSubmit, setShowSubmit] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -821,7 +838,7 @@ export default function Resources() {
                   <SlidersHorizontal className="w-4 h-4 text-gray-400" />
                 </button>
                 <div>
-                  {activeCategory === "All" ? (
+                  {activeCategory === "Beginners Guide" ? null : activeCategory === "All" ? (
                     <>
                       <h1 className="text-3xl font-black tracking-tight text-white mb-1">
                         All <span className="text-primary" style={{ textShadow: "0 0 24px rgba(0,243,255,0.4)" }}>Resources</span>
@@ -839,7 +856,7 @@ export default function Resources() {
                   )}
                 </div>
               </div>
-              {!isLoading && (
+              {!isLoading && activeCategory !== "Beginners Guide" && (
                 <span className="text-xs font-mono text-gray-600 mt-1 shrink-0">
                   {filtered.length} resource{filtered.length !== 1 ? "s" : ""}
                   {search ? ` for "${search}"` : ""}
@@ -849,22 +866,24 @@ export default function Resources() {
           </div>
 
           {/* Mirror-link safety banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex items-start gap-3 p-3 rounded-xl mb-6 border"
-            style={{ background: "rgba(0,243,255,0.04)", borderColor: "rgba(0,243,255,0.1)" }}
-          >
-            <Info className="w-4 h-4 text-primary/60 shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-500 leading-relaxed">
-              <span className="text-primary/80 font-semibold">Stay safe:</span> {MIRROR_WARNING}
-            </p>
-          </motion.div>
+          {activeCategory !== "Beginners Guide" && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex items-start gap-3 p-3 rounded-xl mb-6 border"
+              style={{ background: "rgba(0,243,255,0.04)", borderColor: "rgba(0,243,255,0.1)" }}
+            >
+              <Info className="w-4 h-4 text-primary/60 shrink-0 mt-0.5" />
+              <p className="text-xs text-gray-500 leading-relaxed">
+                <span className="text-primary/80 font-semibold">Stay safe:</span> {MIRROR_WARNING}
+              </p>
+            </motion.div>
+          )}
 
           {/* Category-specific warning (e.g. cybersecurity disclaimer) */}
           <AnimatePresence>
-            {activeMeta?.warning && (
+            {activeCategory !== "Beginners Guide" && activeMeta?.warning && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -877,8 +896,10 @@ export default function Resources() {
             )}
           </AnimatePresence>
 
-          {/* Loading skeletons */}
-          {isLoading ? (
+          {/* Beginner's Guide view */}
+          {activeCategory === "Beginners Guide" ? (
+            <BeginnersGuide />
+          ) : isLoading ? (
             <div className="space-y-10">
               {[1, 2, 3].map(i => (
                 <div key={i}>

@@ -85,10 +85,10 @@ export class DatabaseStorage implements IStorage {
 
   async getResourcesPaginated(page: number, limit: number, category?: string, search?: string): Promise<{ resources: Resource[]; total: number }> {
     const offset = (page - 1) * limit;
-    const conditions = [eq(resources.status, "approved")];
-    if (category && category !== "All") conditions.push(eq(resources.category, category));
-    if (search) conditions.push(or(like(resources.title, `%${search}%`), like(resources.description, `%${search}%`)));
-    const where = and(...conditions);
+    const dbConditions: any[] = [eq(resources.status, "approved")];
+    if (category && category !== "All") dbConditions.push(eq(resources.category, category));
+    if (search) dbConditions.push(or(like(resources.title, `%${search}%`), like(resources.description, `%${search}%`)));
+    const where = and(...dbConditions);
 
     const [rows, [{ count }]] = await Promise.all([
       db.select().from(resources).where(where).orderBy(desc(resources.createdAt)).limit(limit).offset(offset),
