@@ -7,6 +7,7 @@ const VALID_CATEGORIES = [
   "Learning", "Programming", "Dev Tools", "AI & ML",
   "Cybersecurity", "Design & UI", "Reference", "Community", "Books", "Practice",
   "Entertainment", "General Tools",
+  "Cloud & DevOps", "Data Science", "Career",
 ] as const;
 
 const VALID_ROADMAP_ICONS = [

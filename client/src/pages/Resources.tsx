@@ -11,7 +11,7 @@ import {
   BookOpen, Wrench, Shield, Palette, Users, Bot, LibraryBig,
   Code2, GraduationCap, Layers, Menu, X, Plus, ChevronRight,
   Tag, Info, Brain, ThumbsUp, ChevronLeft, SlidersHorizontal,
-  Tv, Cog,
+  Tv, Cog, Award, BarChart3, Cloud,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,39 @@ type CategoryMeta = {
 };
 
 const CATEGORY_META: Record<string, CategoryMeta> = {
+  "Cloud & DevOps": {
+    color: "#06b6d4", bg: "rgba(6,182,212,0.08)", border: "rgba(6,182,212,0.25)", glow: "rgba(6,182,212,0.12)",
+    Icon: Cloud,
+    description: "Cloud platforms, infrastructure, CI/CD, containers, and DevOps tools.",
+    subcategories: {
+      "Cloud Platforms":     { description: "AWS, GCP, Azure, and other cloud provider resources." },
+      "Containers & Docker": { description: "Containerization, orchestration, and registry tools." },
+      "CI/CD & Automation":  { description: "Continuous integration, delivery, and infrastructure automation." },
+      "Monitoring & Logging":{ description: "Observability, monitoring, logging, and alerting tools." },
+    },
+  },
+  "Data Science": {
+    color: "#2dd4bf", bg: "rgba(45,212,191,0.08)", border: "rgba(45,212,191,0.25)", glow: "rgba(45,212,191,0.12)",
+    Icon: BarChart3,
+    description: "Analytics, visualization, statistics, big data, and data engineering.",
+    subcategories: {
+      "Analytics & BI":      { description: "Business intelligence, dashboards, and data analysis tools." },
+      "Visualization":       { description: "Charting libraries, graphing tools, and data viz platforms." },
+      "Statistics & Math":   { description: "Statistical analysis, probability, and mathematical tools." },
+      "Big Data & ETL":      { description: "Data pipelines, warehouses, and big data processing." },
+    },
+  },
+  "Career": {
+    color: "#f59e0b", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.25)", glow: "rgba(245,158,11,0.12)",
+    Icon: Award,
+    description: "Job boards, resume tools, interview prep, and career development.",
+    subcategories: {
+      "Job Boards":          { description: "Job search platforms and freelance marketplaces." },
+      "Resume & Portfolio":  { description: "Resume builders, portfolio templates, and personal branding." },
+      "Interview Prep":      { description: "Mock interviews, coding challenges, and behavioral prep." },
+      "Freelancing":         { description: "Freelance platforms, pricing guides, and client management." },
+    },
+  },
   "Learning": {
     color: "#a855f7", bg: "rgba(168,85,247,0.09)", border: "rgba(168,85,247,0.3)", glow: "rgba(168,85,247,0.15)",
     Icon: GraduationCap,
