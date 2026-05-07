@@ -9,9 +9,17 @@ export const api = {
       input: z.object({
         category: z.string().optional(),
         search: z.string().optional(),
+        page: z.coerce.number().optional(),
+        limit: z.coerce.number().optional(),
       }).optional(),
       responses: {
-        200: z.array(z.custom<typeof resources.$inferSelect>()),
+        200: z.union([
+          z.array(z.custom<typeof resources.$inferSelect>()),
+          z.object({
+            resources: z.array(z.custom<typeof resources.$inferSelect>()),
+            total: z.number(),
+          }),
+        ]),
       },
     },
   },

@@ -83,6 +83,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const category = req.query.category as string;
     const search = req.query.search as string;
     const recent = req.query.recent === "true";
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+
+    if (page && limit) {
+      const result = await storage.getResourcesPaginated(page, limit, category, search);
+      return res.json(result);
+    }
 
     let resources;
     if (recent) {

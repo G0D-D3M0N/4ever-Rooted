@@ -12,6 +12,7 @@ export interface IStorage {
   getRecentResources(limit: number): Promise<Resource[]>;
   getResourcesByCategory(category: string): Promise<Resource[]>;
   getPendingResources(): Promise<Resource[]>;
+  getResourcesPaginated(page: number, limit: number, category?: string, search?: string): Promise<{ resources: Resource[]; total: number }>;
   createResource(resource: InsertResource): Promise<Resource>;
   approveResource(id: number): Promise<Resource | undefined>;
   rejectResource(id: number): Promise<void>;
@@ -80,6 +81,21 @@ export class DatabaseStorage implements IStorage {
   async getResources(): Promise<Resource[]> {
     const res = await db.select().from(resources).where(eq(resources.status, "approved"));
     return res.map(parseResource);
+  }
+
+  async getResourcesPaginated(page: number, limit: number, category?: string, search?: string): Promise<{ resources: Resource[]; total: number }> {
+    const offset = (page - 1) * limit;
+    const conditions = [eq(resources.status, "approved")];
+    if (category && category !== "All") conditions.push(eq(resources.category, category));
+    if (search) conditions.push(or(like(resources.title, `%${search}%`), like(resources.description, `%${search}%`)));
+    const where = and(...conditions);
+
+    const [rows, [{ count }]] = await Promise.all([
+      db.select().from(resources).where(where).orderBy(desc(resources.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)` }).from(resources).where(where),
+    ]);
+
+    return { resources: rows.map(parseResource), total: Number(count) };
   }
 
   async getRecentResources(limit: number): Promise<Resource[]> {
